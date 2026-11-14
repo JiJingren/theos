@@ -91,10 +91,10 @@ jobs:
           ls -la packages/
           cp -v packages/*.deb "$GITHUB_WORKSPACE/out/"
           echo "--- lipo -info ---"
-          toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/debug/Armv7Win.dylib 2>/dev/null || \
-            toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/Armv7Win.dylib
+          "$THEOS/toolchain/windows/iphone/bin/lipo.exe" -info .theos/obj/debug/Armv7Win.dylib 2>/dev/null || \
+            "$THEOS/toolchain/windows/iphone/bin/lipo.exe" -info .theos/obj/Armv7Win.dylib
           echo "--- otool arch ---"
-          toolchain/windows/iphone/bin/otool.exe -arch all -h .theos/obj/debug/Armv7Win.dylib 2>/dev/null | head -20 || true
+          "$THEOS/toolchain/windows/iphone/bin/otool.exe" -arch all -h .theos/obj/debug/Armv7Win.dylib 2>/dev/null | head -20 || true
 
       - name: Mixed arch list must keep armv7 and still package
         run: |
@@ -109,8 +109,9 @@ jobs:
           ls -la packages/
           cp -v packages/*.deb "$GITHUB_WORKSPACE/out/"
           echo "--- lipo -info ---"
-          toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/debug/MixedWin.dylib 2>/dev/null || \
-            toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/MixedWin.dylib
+          "$THEOS"/toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/debug/MixedWin.dylib 2>/dev/null || \
+            "$THEOS"/toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/MixedWin.dylib
+          "$THEOS"/toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/debug/MixedWin.dylib | grep -E 'armv7|arm64' || true
 
       - uses: actions/upload-artifact@v4
         if: always()
