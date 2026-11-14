@@ -1,0 +1,55 @@
+name: Windows build test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MSYS2 tools
+        run: |
+          export PATH="/c/msys64/usr/bin:/c/msys64/mingw64/bin:$PATH"
+          pacman --noconfirm -S --needed make rsync perl curl tar xz unzip zip diffutils >/dev/null
+          echo "/c/msys64/usr/bin" >> "$GITHUB_PATH"
+          echo "/c/msys64/mingw64/bin" >> "$GITHUB_PATH"
+
+      - name: Versions
+        run: |
+          make --version | head -1
+          perl -v | sed -n 2p
+          git --version
+
+      - name: Install toolchain + SDKs
+        run: |
+          export THEOS="$PWD"
+          ./bin/install-sdk latest
+          ./bin/install-sdk latest-tv
+          ls -la "$THEOS/sdks"
+
+      - name: Compile hello tweak
+        run: |
+          export THEOS="$PWD"
+          mkdir -p /tmp/tweak
+          cd /tmp/tweak
+          printf 'ARCHS = arm64 arm64e\nTARGET = iphone:clang:latest:11.0\nPACKAGE_VERSION = 0.0.1\nINSTALL_TARGET_PROCESSES = SpringBoard\ninclude $(THEOS)/makefiles/common.mk\n\nTWEAK_NAME = HelloWin\nHelloWin_FILES = Tweak.x\ninclude $(THEOS_MAKE_PATH)/tweak.mk\n' > Makefile
+          printf '#import <UIKit/UIKit.h>\n%%hook SpringBoard\n- (void)applicationDidFinishLaunching:(id)app {\n  NSLog(@"[HelloWin] loaded");\n}\n%%end\n' > Tweak.x
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME= 2>&1 | tail -60
+          ls -la packages/
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tweak-packages
+          path: |
+            /tmp/tweak/packages/*.deb
+          if-no-files-found: ignore
