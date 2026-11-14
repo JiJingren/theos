@@ -58,5 +58,7 @@ jobs:
         if: always()
         with:
           name: tweak-packages
-          path: packages/*.deb
+          path: |
+            /tmp/tweak/packages/*.deb
+            D:/a/theos-win/theos-win/packages/*.deb
           if-no-files-found: ignore
