@@ -32,6 +32,12 @@ jobs:
       - name: Install toolchain + SDKs
         run: |
           export THEOS="$PWD"
+          mkdir -p "$THEOS/toolchain"
+          curl -L --retry 3 -o /tmp/toolchain.tar.xz \
+            https://github.com/JiJingren/llvm-project/releases/latest/download/iOSToolchain-x86_64.tar.xz
+          tar -xJf /tmp/toolchain.tar.xz -C "$THEOS/toolchain"
+          rm -f /tmp/toolchain.tar.xz
+          ls -la "$THEOS/toolchain/windows/iphone/bin" | head -20
           ./bin/install-sdk latest
           ./bin/install-sdk latest-tv
           ls -la "$THEOS/sdks"
