@@ -78,7 +78,25 @@ jobs:
           echo "--- data.tar members ---"
           tar -tvf data.tar.*
 
-      - name: Mixed arch list must drop armv7 and still package
+      - name: armv7-only tweak must link and package
+        run: |
+          export THEOS="$PWD"
+          mkdir -p /tmp/tweak7b/layout/DEBIAN
+          cd /tmp/tweak7b
+          printf 'ARCHS = armv7\nTARGET = iphone:clang:latest:7.0\nPACKAGE_VERSION = 0.0.1\ninclude $(THEOS)/makefiles/common.mk\n\nTWEAK_NAME = Armv7Win\nArmv7Win_FILES = Tweak.x\ninclude $(THEOS_MAKE_PATH)/tweak.mk\n' > Makefile
+          printf '#import <UIKit/UIKit.h>\n%%hook SpringBoard\n- (void)applicationDidFinishLaunching:(id)app { NSLog(@"[Armv7Win] loaded"); }\n%%end\n' > Tweak.x
+          printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n<key>Filter</key><dict><key>Bundles</key><array><string>com.apple.springboard</string></array></dict>\n</dict>\n</plist>\n' > Armv7Win.plist
+          printf 'Package: com.example.armv7win\nName: Armv7Win\nVersion: 0.0.1\nArchitecture: iphoneos-arm\nDescription: armv7 only test\nMaintainer: example\nAuthor: example\nSection: Tweaks\nDepends: mobilesubstrate\n' > control
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME= THEOS_LDFLAGS= 2>&1 | tail -80
+          ls -la packages/
+          cp -v packages/*.deb "$GITHUB_WORKSPACE/out/"
+          echo "--- lipo -info ---"
+          toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/debug/Armv7Win.dylib 2>/dev/null || \
+            toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/Armv7Win.dylib
+          echo "--- otool arch ---"
+          toolchain/windows/iphone/bin/otool.exe -arch all -h .theos/obj/debug/Armv7Win.dylib 2>/dev/null | head -20 || true
+
+      - name: Mixed arch list must keep armv7 and still package
         run: |
           export THEOS="$PWD"
           mkdir -p /tmp/tweakmix
@@ -90,6 +108,9 @@ jobs:
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME= THEOS_LDFLAGS= 2>&1 | tail -60
           ls -la packages/
           cp -v packages/*.deb "$GITHUB_WORKSPACE/out/"
+          echo "--- lipo -info ---"
+          toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/debug/MixedWin.dylib 2>/dev/null || \
+            toolchain/windows/iphone/bin/lipo.exe -info .theos/obj/MixedWin.dylib
 
       - uses: actions/upload-artifact@v4
         if: always()

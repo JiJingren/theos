@@ -83,19 +83,8 @@ endif
 
 # “iOS 9 changed the 32-bit pagesize on 64-bit CPUs from 4096 bytes to 16384: all 32-bit binaries
 # must now be compiled with -Wl,-segalign,4000.” https://twitter.com/saurik/status/654198997024796672
-# ld64 as shipped for Windows crashes on 32-bit Mach-O objects with a
-# "macho_relocatable_file.cpp:2097" assertion, so 32-bit is not supported there.
-# Record the requested 32-bit archs (independent of THEOS_CURRENT_ARCH, which is
-# empty for the top-level invocation) so darwin_tail.mk / instance/rules.mk can
-# drop them from ARCHS/TARGET_ARCHS.
-ifeq ($(THEOS_PLATFORM_NAME),windows)
-	_THEOS_TARGET_UNSUPPORTED_ARCHS := $(filter armv6 armv7 armv7s,$(ARCHS) $(THEOS_CURRENT_ARCH))
-endif
-
 ifneq ($(filter armv6 armv7 armv7s,$(THEOS_CURRENT_ARCH)),)
-ifneq ($(THEOS_PLATFORM_NAME),windows)
 	LEGACYFLAGS := -Xlinker -segalign -Xlinker 4000
-endif
 endif
 
 # Warn about using clang >=12.0.0 when deploying for arm64e before iOS 14.0, which uses an old ABI
