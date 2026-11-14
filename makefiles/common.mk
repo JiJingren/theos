@@ -43,7 +43,11 @@ _THEOS_FALSE :=
 __theos_bool = $(if $(filter Y y YES yes TRUE true 1,$(1)),$(_THEOS_TRUE),$(_THEOS_FALSE))
 # Existence
 __exists = $(if $(wildcard $(1)),$(_THEOS_TRUE),$(_THEOS_FALSE))
-__executable = $(if $(shell PATH="$(THEOS_BIN_PATH):$$PATH" type "$(1)" > /dev/null 2>&1 && echo 1),$(_THEOS_TRUE),$(_THEOS_FALSE))
+# On MSYS2 (and Cygwin) `type` reports scripts we ship that carry a shebang, even
+# when the interpreter that shebang names is not installed. Fall back to checking
+# for an actual executable file so a missing tool is reported as "not found"
+# instead of blowing up in the middle of a build.
+__executable = $(if $(shell PATH="$(THEOS_BIN_PATH):$$PATH" type "$(1)" > /dev/null 2>&1 && echo 1),$(_THEOS_TRUE),$(if $(wildcard $(1)),$(_THEOS_TRUE),$(_THEOS_FALSE)))
 # Static redefinition
 __simplify = $(2)$(eval $(1):=$(2))
 ###
@@ -150,15 +154,23 @@ ifneq ($(_THEOS_PLATFORM_CALCULATED),$(_THEOS_TRUE))
 uname_s := $(shell uname -s)
 uname_o := $(shell uname -o 2>/dev/null)
 
+# MSYS2/Cygwin report e.g. "MINGW64_NT-10.0-19045"; drop the version suffix so that
+# a single platform/MINGW64_NT.mk covers every Windows release.
+uname_s := $(if $(filter MINGW% MSYS% CYGWIN%,$(uname_s)),$(word 1,$(subst -, ,$(uname_s))),$(uname_s))
+
 export _THEOS_PLATFORM = $(uname_s)
 export _THEOS_OS = $(if $(uname_o),$(uname_o),$(uname_s))
 export _THEOS_PLATFORM_CALCULATED := 1
 endif
 
--include $(THEOS_MAKE_PATH)/platform/$(_THEOS_PLATFORM).mk
--include $(THEOS_MAKE_PATH)/platform/$(_THEOS_OS).mk
-$(eval $(call __mod,platform/$(_THEOS_PLATFORM).mk))
-$(eval $(call __mod,platform/$(_THEOS_OS).mk))
+# MSYS2/Cygwin hosts are handled by the Windows platform, whatever uname says.
+_THEOS_PLATFORM_DIR := $(if $(wildcard $(THEOS_MAKE_PATH)/platform/$(_THEOS_PLATFORM).mk),$(_THEOS_PLATFORM),$(if $(filter MINGW% MSYS% CYGWIN%,$(_THEOS_PLATFORM)),Windows,$(_THEOS_PLATFORM)))
+_THEOS_OS_DIR := $(if $(wildcard $(THEOS_MAKE_PATH)/platform/$(_THEOS_OS).mk),$(_THEOS_OS),$(if $(filter MINGW% MSYS% CYGWIN% msys cygwin,$(_THEOS_OS)),Windows,$(_THEOS_OS)))
+
+-include $(THEOS_MAKE_PATH)/platform/$(_THEOS_PLATFORM_DIR).mk
+-include $(THEOS_MAKE_PATH)/platform/$(_THEOS_OS_DIR).mk
+$(eval $(call __mod,platform/$(_THEOS_PLATFORM_DIR).mk))
+$(eval $(call __mod,platform/$(_THEOS_OS_DIR).mk))
 
 ifneq ($(_THEOS_TARGET_CALCULATED),$(_THEOS_TRUE))
 $(call __eval_target,$(target),$(call __schema_var_last,,TARGET),$(_THEOS_PLATFORM_DEFAULT_TARGET))
@@ -169,11 +181,14 @@ endif
 _THEOS_TARGET_CALCULATED := 1
 endif
 
--include $(THEOS_MAKE_PATH)/targets/$(_THEOS_PLATFORM)/$(_THEOS_TARGET).mk
--include $(THEOS_MAKE_PATH)/targets/$(_THEOS_OS)/$(_THEOS_TARGET).mk
+_THEOS_TARGET_PLATFORM_DIR := $(if $(wildcard $(THEOS_MAKE_PATH)/targets/$(_THEOS_PLATFORM)/$(_THEOS_TARGET).mk),$(_THEOS_PLATFORM),Windows)
+_THEOS_TARGET_OS_DIR := $(if $(wildcard $(THEOS_MAKE_PATH)/targets/$(_THEOS_OS)/$(_THEOS_TARGET).mk),$(_THEOS_OS),Windows)
+
+-include $(THEOS_MAKE_PATH)/targets/$(_THEOS_TARGET_PLATFORM_DIR)/$(_THEOS_TARGET).mk
+-include $(THEOS_MAKE_PATH)/targets/$(_THEOS_TARGET_OS_DIR)/$(_THEOS_TARGET).mk
 -include $(THEOS_MAKE_PATH)/targets/$(_THEOS_TARGET).mk
-$(eval $(call __mod,targets/$(_THEOS_PLATFORM)/$(_THEOS_TARGET).mk))
-$(eval $(call __mod,targets/$(_THEOS_OS)/$(_THEOS_TARGET).mk))
+$(eval $(call __mod,targets/$(_THEOS_TARGET_PLATFORM_DIR)/$(_THEOS_TARGET).mk))
+$(eval $(call __mod,targets/$(_THEOS_TARGET_OS_DIR)/$(_THEOS_TARGET).mk))
 $(eval $(call __mod,targets/$(_THEOS_TARGET).mk))
 
 ifneq ($(_THEOS_TARGET_LOADED),$(_THEOS_TRUE))

@@ -5,8 +5,10 @@ has() {
 	type "$1" >/dev/null 2>&1
 }
 
+PLATFORM="$(uname)"
+
 # Root is no bueno
-if [[ $EUID -eq 0 ]]; then
+if [[ $EUID -eq 0 && $PLATFORM != MINGW* && $PLATFORM != MSYS* && $PLATFORM != CYGWIN* ]]; then
 	echo "Theos should NOT be installed with or run as root (su/sudo)!" >&2
 	echo "  - If you've installed Theos as root, please remove the install and" >&2
 	echo "    reinstall as a non-root user." >&2
@@ -41,9 +43,12 @@ cd "$THEOS"
 # Set conflig flag so multiple git fetch jobs run simultaneously.
 git config submodule.fetchJobs 4
 
-# Update Theos itself, then submodules.
+# Update Theos itself. Submodules are vendored in the Windows port, so they are
+# only refreshed on hosts whose upstream repo still uses them.
 git pull --all --rebase=false
-git submodule update --init --recursive
+if [[ -f "$THEOS/.gitmodules" ]]; then
+	git submodule update --init --recursive
+fi
 
 # The Theos update may need to do some extra stuff, so run the post-update script here.
 exec bin/post-update

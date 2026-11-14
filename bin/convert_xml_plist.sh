@@ -20,11 +20,14 @@ if [[ -z $directory ]]; then
 fi
 
 # Check for plist converters
-# A Linux package(s) appear to offer a non-Darwin plutil - we want to avoid it 
+# A Linux package(s) appear to offer a non-Darwin plutil - we want to avoid it
+# On Windows plistutil.exe lives inside the toolchain bin dir, which is not on PATH.
 if [[ "$(uname)" == "Darwin" ]] && command -v plutil &> /dev/null; then
     cmd=plutil
 elif command -v plistutil &> /dev/null; then
     cmd=plistutil
+elif [[ -x $THEOS/toolchain/windows/$THEOS_TARGET_NAME/bin/plistutil.exe ]]; then
+    cmd="$THEOS/toolchain/windows/$THEOS_TARGET_NAME/bin/plistutil.exe"
 elif command -v ply &> /dev/null; then
     cmd=ply
 else
@@ -51,7 +54,7 @@ find "$directory" \( -name \*.plist -o -name \*.strings \) | while read i; do
 		elif [[ $cmd == ply ]]; then
 			ply -c binary "$i"
 		else
-			plistutil -i "$i" -f bin -o "$i"
+			"$cmd" -i "$i" -f bin -o "$i"
 		fi
 	fi
 done

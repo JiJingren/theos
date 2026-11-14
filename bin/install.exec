@@ -15,5 +15,10 @@ if [[ $TARGET_INSTALL_REMOTE == 1 ]]; then
 
 	exec ${args[@]}
 else
-	exec su root -c "$@"
+	# Windows port: no root, so run the command as-is.
+	if [[ $# -eq 1 ]]; then
+		exec bash -c "$1"
+	else
+		exec "$@"
+	fi
 fi
