@@ -76,6 +76,16 @@ ifneq ($(THEOS_PACKAGE_INSTALL_PREFIX),)
 		$(shell mv $(wildcard $(_THEOS_STAGING_TMP)/*) $(THEOS_STAGING_DIR)) \
 	)
 endif
+# dm.pl verifies the mode bits of DEBIAN and its maintainer scripts (see
+# check_control_scripts in dm.pl) and only fakes ownership, not permissions.
+# On Windows staged files inherit Windows ACLs, which show up as 0666/0777, so
+# normalise them here before packaging.
+	$(ECHO_NOTHING)if [ -d "$(THEOS_STAGING_DIR)/DEBIAN" ]; then \
+		chmod 0755 "$(THEOS_STAGING_DIR)/DEBIAN"; \
+		for m in preinst postinst prerm postrm extrainst_; do \
+			[ -f "$(THEOS_STAGING_DIR)/DEBIAN/$$m" ] && chmod 0755 "$(THEOS_STAGING_DIR)/DEBIAN/$$m"; \
+		done; \
+	fi$(ECHO_END)
 	$(ECHO_NOTHING)COPYFILE_DISABLE=1 $(FAKEROOT) -r $(_THEOS_PLATFORM_DPKG_DEB) -Z$(_THEOS_PLATFORM_DPKG_DEB_COMPRESSION) -z$(THEOS_PLATFORM_DEB_COMPRESSION_LEVEL) -b "$(THEOS_STAGING_DIR)" "$(_THEOS_DEB_PACKAGE_FILENAME)"$(ECHO_END)
 
 # This variable is used in package.mk
