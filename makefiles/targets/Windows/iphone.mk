@@ -42,4 +42,10 @@ include $(THEOS_MAKE_PATH)/targets/_common/darwin_head.mk
 include $(THEOS_MAKE_PATH)/targets/_common/iphone.mk
 include $(THEOS_MAKE_PATH)/targets/_common/darwin_tail.mk
 
+# Logos emits `__asm__(".linker_option \"-framework\", \"CydiaSubstrate\"")`,
+# an assembler-level autolink hint. ld64 on macOS honours it for the .tbd-only
+# stub framework we ship, but the Windows ld64 port does not, so every
+# %hook goes undefined. Link the stub explicitly instead.
+_THEOS_TARGET_LDFLAGS += -L"$(THEOS_VENDOR_LIBRARY_PATH)" -lsubstrate
+
 endif
