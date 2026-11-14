@@ -1,0 +1,100 @@
+name: Windows interactive test
+
+on:
+  workflow_dispatch:
+    inputs:
+      ssh_key:
+        description: "Public SSH key to authorize (e.g. ssh-ed25519 AAAA... comment)"
+        required: false
+        default: ""
+      ttyd_password:
+        description: "Password for the web terminal served by ttyd"
+        required: false
+        default: "theos"
+      hold_minutes:
+        description: "How long to keep the interactive session alive"
+        required: false
+        default: "300"
+
+jobs:
+  interactive:
+    runs-on: windows-latest
+    timeout-minutes: 350
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2 tools on PATH
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_PATH -Value 'C:\msys64\usr\bin'
+          Add-Content -Path $env:GITHUB_PATH -Value 'C:\msys64\mingw64\bin'
+          & 'C:\msys64\usr\bin\bash.exe' -lc 'pacman --noconfirm -S --needed make rsync perl curl tar xz unzip zip'
+
+      - name: Set up sshd
+        if: ${{ inputs.ssh_key != '' }}
+        shell: pwsh
+        run: |
+          $key = '${{ inputs.ssh_key }}'
+          $admin = "C:\ProgramData\ssh\administrators_authorized_keys"
+          if (-not (Test-Path 'C:\ProgramData\ssh')) { New-Item -ItemType Directory 'C:\ProgramData\ssh' | Out-Null }
+          if (Test-Path $admin) {
+            Add-Content -Path $admin -Value $key
+          } else {
+            Set-Content -Path $admin -Value $key -Encoding ascii
+          }
+          icacls $admin /inheritance:r | Out-Null
+          icacls $admin /grant "Administrators:F" "SYSTEM:F" | Out-Null
+          if (!(Get-Service sshd -ErrorAction SilentlyContinue)) {
+            Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0 | Out-Null
+          }
+          Set-Service -Name sshd -StartupType Manual
+          Start-Service sshd
+          Get-Service sshd
+
+      - name: Print connection info
+        shell: pwsh
+        run: |
+          $ip = (Invoke-RestMethod https://api.ipify.org)
+          Write-Host "::notice::SSH port 22 on $ip — user: runneradmin, password: (see below)"
+          Write-Host "Public IP: $ip"
+          Write-Host "Public key authorized: $('${{ inputs.ssh_key }}' -ne '')"
+          Write-Host "ttyd URL (after ready): http://$ip:7681 — login: runner / password: ${{ inputs.ttyd_password }}"
+
+      - name: Install theos toolchain + SDKs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          export THEOS="$PWD"
+          ./bin/install-sdk latest || true
+          ./bin/install-sdk latest-tv || true
+          ls -la "$THEOS/sdks" || true
+
+      - name: Serve interactive shell over ttyd
+        shell: pwsh
+        run: |
+          $ttyd = "C:\ttyd.exe"
+          Invoke-WebRequest -Uri 'https://github.com/tsl0922/ttyd/releases/latest/download/ttyd.win32.exe' -OutFile $ttyd
+          $ip = (Invoke-RestMethod https://api.ipify.org)
+          Write-Host "::notice::ttyd listening on http://$ip:7681 (user runner password ${{ inputs.ttyd_password }})"
+          # ttyd spawns C:\msys64\usr\bin\bash.exe with the repo as cwd.
+          $env:THEOS = (Get-Location).Path
+          & $ttyd -p 7681 -c "runner:${{ inputs.ttyd_password }}" -W -t fontSize=16 `
+            'C:\msys64\usr\bin\bash.exe' '--login' '-i'
+
+      - name: Keep job alive
+        shell: pwsh
+        run: |
+          $mins = [int]'${{ inputs.hold_minutes }}'
+          Write-Host "Holding job open for $mins minutes."
+          Start-Sleep -Seconds ($mins * 60)
+
+      - name: Upload packages
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-packages
+          path: |
+            packages/*.deb
+            .theos/last_package
+          if-no-files-found: ignore
