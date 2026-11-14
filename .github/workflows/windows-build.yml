@@ -58,6 +58,5 @@ jobs:
         if: always()
         with:
           name: tweak-packages
-          path: |
-            /tmp/tweak/packages/*.deb
+          path: packages/*.deb
           if-no-files-found: ignore
