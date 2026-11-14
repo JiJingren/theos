@@ -56,21 +56,21 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/out"
           cp -v packages/*.deb "$GITHUB_WORKSPACE/out/"
 
-      - name: Compile legacy armv7 tweak with maintainer scripts
+      - name: Package tweak with maintainer scripts
         run: |
           export THEOS="$PWD"
           mkdir -p /tmp/tweak7/layout/DEBIAN
           cd /tmp/tweak7
-          printf 'ARCHS = armv7\nTARGET = iphone:clang:latest:7.0\nPACKAGE_VERSION = 0.0.1\ninclude $(THEOS)/makefiles/common.mk\n\nTWEAK_NAME = LegacyWin\nLegacyWin_FILES = Tweak.x\ninclude $(THEOS_MAKE_PATH)/tweak.mk\n' > Makefile
+          printf 'ARCHS = arm64\nTARGET = iphone:clang:latest:11.0\nPACKAGE_VERSION = 0.0.1\ninclude $(THEOS)/makefiles/common.mk\n\nTWEAK_NAME = LegacyWin\nLegacyWin_FILES = Tweak.x\ninclude $(THEOS_MAKE_PATH)/tweak.mk\n' > Makefile
           printf '#import <UIKit/UIKit.h>\n%%hook SpringBoard\n- (void)applicationDidFinishLaunching:(id)app {\n  NSLog(@"[LegacyWin] loaded");\n}\n%%end\n' > Tweak.x
           printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n<key>Filter</key><dict><key>Bundles</key><array><string>com.apple.springboard</string></array></dict>\n</dict>\n</plist>\n' > LegacyWin.plist
           printf '#!/bin/bash\necho postinst ran > /tmp/tweak7/postinst.log\nexit 0\n' > layout/DEBIAN/postinst
           printf '#!/bin/bash\nexit 0\n' > layout/DEBIAN/prerm
           chmod 0755 layout/DEBIAN/postinst layout/DEBIAN/prerm
-          printf 'Package: com.example.legacywin\nName: LegacyWin\nVersion: 0.0.1\nArchitecture: iphoneos-arm\nDescription: armv7 test\nMaintainer: example\nAuthor: example\nSection: Tweaks\nDepends: mobilesubstrate\n' > control
-          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME= THEOS_LDFLAGS= 2>&1 | tail -80 || echo "armv7 link failed"
-          ls -la packages/ || true
-          cp -v packages/*.deb "$GITHUB_WORKSPACE/out/" || true
+          printf 'Package: com.example.legacywin\nName: LegacyWin\nVersion: 0.0.1\nArchitecture: iphoneos-arm64\nDescription: armv7 test\nMaintainer: example\nAuthor: example\nSection: Tweaks\nDepends: mobilesubstrate\n' > control
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME= THEOS_LDFLAGS= 2>&1 | tail -80
+          ls -la packages/
+          cp -v packages/*.deb "$GITHUB_WORKSPACE/out/"
           echo "=== inspecting deb ==="
           cd /tmp && mkdir -p debx && cd debx && rm -rf * && ar x /tmp/tweak7/packages/*.deb || true
           echo "--- control.tar members ---"
