@@ -83,9 +83,9 @@ endif
 	$(ECHO_NOTHING)if [ -d "$(THEOS_STAGING_DIR)/DEBIAN" ]; then \
 		chmod 0755 "$(THEOS_STAGING_DIR)/DEBIAN"; \
 		for m in preinst postinst prerm postrm extrainst_; do \
-			[ -f "$(THEOS_STAGING_DIR)/DEBIAN/$$m" ] && chmod 0755 "$(THEOS_STAGING_DIR)/DEBIAN/$$m"; \
+			if [ -f "$(THEOS_STAGING_DIR)/DEBIAN/$$m" ]; then chmod 0755 "$(THEOS_STAGING_DIR)/DEBIAN/$$m"; fi; \
 		done; \
-	fi$(ECHO_END)
+	fi; true$(ECHO_END)
 	$(ECHO_NOTHING)COPYFILE_DISABLE=1 $(FAKEROOT) -r $(_THEOS_PLATFORM_DPKG_DEB) -Z$(_THEOS_PLATFORM_DPKG_DEB_COMPRESSION) -z$(THEOS_PLATFORM_DEB_COMPRESSION_LEVEL) -b "$(THEOS_STAGING_DIR)" "$(_THEOS_DEB_PACKAGE_FILENAME)"$(ECHO_END)
 
 # This variable is used in package.mk
