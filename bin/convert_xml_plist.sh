@@ -26,8 +26,8 @@ if [[ "$(uname)" == "Darwin" ]] && command -v plutil &> /dev/null; then
     cmd=plutil
 elif command -v plistutil &> /dev/null; then
     cmd=plistutil
-elif [[ -x $THEOS/toolchain/windows/$THEOS_TARGET_NAME/bin/plistutil.exe ]]; then
-    cmd="$THEOS/toolchain/windows/$THEOS_TARGET_NAME/bin/plistutil.exe"
+elif [[ -n $THEOS && -x $THEOS/toolchain/windows/iphone/bin/plistutil.exe ]]; then
+    cmd="$THEOS/toolchain/windows/iphone/bin/plistutil.exe"
 elif command -v ply &> /dev/null; then
     cmd=ply
 else
