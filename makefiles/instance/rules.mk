@@ -153,6 +153,13 @@ else
 TARGET_ARCHS = $(ARCHS)
 endif
 
+# The Windows ld64 port cannot link 32-bit ARM objects (it asserts inside
+# macho_relocatable_file.cpp), so drop those archs before anything else looks
+# at the list. See makefiles/targets/_common/iphone.mk for where it is set.
+ifneq ($(_THEOS_TARGET_UNSUPPORTED_ARCHS),)
+TARGET_ARCHS := $(filter-out $(_THEOS_TARGET_UNSUPPORTED_ARCHS),$(TARGET_ARCHS))
+endif
+
 _TARGET_ARCHS_COUNT = $(words $(TARGET_ARCHS))
 
 # The magic behind `make commands`: proxy the compile commands for one arch

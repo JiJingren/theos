@@ -2,6 +2,21 @@
 # ARCHS, set it to the value of NEUTRAL_ARCH
 ARCHS ?= $(NEUTRAL_ARCH)
 
+# 32-bit ARM objects crash ld64 on Windows, so silently skip them there instead of
+# failing the whole build. A project that really needs armv7 has to build on
+# Linux/macOS. See makefiles/targets/_common/iphone.mk.
+ifneq ($(_THEOS_TARGET_UNSUPPORTED_ARCHS),)
+override ARCHS := $(filter-out $(_THEOS_TARGET_UNSUPPORTED_ARCHS),$(ARCHS))
+ifneq ($(strip $(ARCHS)),)
+before-all::
+	@$(PRINT_FORMAT_WARNING) "Skipping unsupported 32-bit arch(s) '$(_THEOS_TARGET_UNSUPPORTED_ARCHS)' on Windows." >&2
+else
+before-all::
+	@$(PRINT_FORMAT_ERROR) "This project only builds for 32-bit ARM, which the Windows toolchain cannot link." >&2
+	@exit 1
+endif
+endif
+
 # determine the SYSROOT (for linking) and ISYSROOT (for compiling, I for “include”) like so:
 # SYSROOT: check for theos/sdks/BlahX.Y.sdk, or Xcode.app/…/SDKs/BlahX.Y.sdk, or leave empty so we
 # show an error
