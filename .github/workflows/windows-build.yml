@@ -53,12 +53,12 @@ jobs:
           printf 'Package: com.example.hellowin\nName: HelloWin\nVersion: 0.0.1\nArchitecture: iphoneos-arm64\nDescription: Windows Theos build test\nMaintainer: example\nAuthor: example\nSection: Tweaks\nDepends: mobilesubstrate\n' > control
           make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME= THEOS_LDFLAGS= 2>&1 | tail -80
           ls -la packages/
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp -v packages/*.deb "$GITHUB_WORKSPACE/out/"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: tweak-packages
-          path: |
-            /tmp/tweak/packages/*.deb
-            D:/a/theos-win/theos-win/packages/*.deb
+          path: out/*.deb
           if-no-files-found: ignore
