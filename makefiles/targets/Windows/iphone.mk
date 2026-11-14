@@ -48,4 +48,10 @@ include $(THEOS_MAKE_PATH)/targets/_common/darwin_tail.mk
 # %hook goes undefined. Link the stub explicitly instead.
 _THEOS_TARGET_LDFLAGS += -L"$(THEOS_VENDOR_LIBRARY_PATH)" -lsubstrate
 
+# ldid.exe resolves the path handed to it with the MSVC CRT, which does not
+# understand MSYS2's /c/... form, and Theos passes an absolute path for the
+# staging copy. Sign relative to the object dir instead so ldid only ever sees
+# a plain filename.
+_THEOS_TARGET_CODESIGN_CD := 1
+
 endif
