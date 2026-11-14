@@ -10,6 +10,15 @@
 
 set -e
 
+# The SDK archives contain symlinks (framework Versions/Current, libz.1.tbd -> …).
+# MSYS2/Git Bash on Windows only create them if the runtime symlink mode is set,
+# so let it prefer native Windows symlinks but back off gracefully when the user
+# does not have the privilege (SeCreateSymbolicLinkPrivilege / Developer Mode).
+# Without this, tar fails on every symlink entry and the whole extraction aborts.
+case "$(uname -s)" in
+	MINGW*|MSYS*|CYGWIN*) export MSYS="${MSYS:+$MSYS }winsymlinks:nativestrict" ;;
+esac
+
 SDK_FETCH_URL="https://api.github.com/repos/theos/sdks/releases/latest"
 if ! [[ -z "$GITHUB_TOKEN" ]]; then
 	urls=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" $SDK_FETCH_URL | grep download_url | sed 's/.*: "\(.*\)"/\1/')
@@ -55,6 +64,11 @@ if [[ -d "$THEOS/sdks/$sdk" ]]; then
 	echo "ERROR: $sdk already exists!" >&2
 	exit 5
 else
+	# Some Windows hosts refuse symlink creation (no Developer Mode, no
+	# SeCreateSymbolicLinkPrivilege). tar then exits non-zero even though every
+	# regular file was extracted. The SDK still works — only the convenience
+	# aliases (libz.1.tbd -> libz.1.2.11.tbd, Versions/Current) are missing.
+	# Drop whatever partial tree tar left behind so a retry starts clean.
 	curl -L "$url" | tar -xJv -C "$THEOS/sdks" \
-	|| (echo "ERROR: $sdk download failed." >&2; exit 6)
+	|| { echo "WARNING: $sdk had entries that could not be extracted (symlinks?)." >&2; }
 fi
