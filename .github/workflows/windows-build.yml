@@ -78,6 +78,19 @@ jobs:
           echo "--- data.tar members ---"
           tar -tvf data.tar.*
 
+      - name: Mixed arch list must drop armv7 and still package
+        run: |
+          export THEOS="$PWD"
+          mkdir -p /tmp/tweakmix
+          cd /tmp/tweakmix
+          printf 'ARCHS = armv7 arm64 arm64e\nTARGET = iphone:clang:latest:11.0\nPACKAGE_VERSION = 0.0.1\ninclude $(THEOS)/makefiles/common.mk\n\nTWEAK_NAME = MixedWin\nMixedWin_FILES = Tweak.x\ninclude $(THEOS_MAKE_PATH)/tweak.mk\n' > Makefile
+          printf '#import <UIKit/UIKit.h>\n%%hook SpringBoard\n- (void)applicationDidFinishLaunching:(id)app { NSLog(@"[MixedWin] loaded"); }\n%%end\n' > Tweak.x
+          printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n<key>Filter</key><dict><key>Bundles</key><array><string>com.apple.springboard</string></array></dict>\n</dict>\n</plist>\n' > MixedWin.plist
+          printf 'Package: com.example.mixedwin\nName: MixedWin\nVersion: 0.0.1\nArchitecture: iphoneos-arm64\nDescription: mixed arch test\nMaintainer: example\nAuthor: example\nSection: Tweaks\nDepends: mobilesubstrate\n' > control
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME= THEOS_LDFLAGS= 2>&1 | tail -60
+          ls -la packages/
+          cp -v packages/*.deb "$GITHUB_WORKSPACE/out/"
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
