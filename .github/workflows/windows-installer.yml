@@ -94,9 +94,10 @@ jobs:
           export HOME=/c/gha-home
           bare="$(cygpath -w /tmp/nopacman/bin)"
           rm -rf /tmp/nopacman/bin && mkdir -p /tmp/nopacman/bin
-          for t in bash sh uname cat git curl tar xz zip make perl rsync diff env printf cut grep sed; do
-            p="$(command -v "$t" 2>/dev/null)" && cp -f "$p" "/tmp/nopacman/bin/$t" || true
+          for t in mkdir rm ln cp mv uname cat git curl tar xz zip make perl rsync diff env printf cut grep sed trash-put; do
+            p="$(command -v "$t" 2>/dev/null)" && cp -f "$p" "/tmp/nopacman/bin/$t"
           done
+          ls /tmp/nopacman/bin
           unset THEOS
           set +e
           PATH="$bare" /c/msys64/usr/bin/bash.exe --noprofile --norc "$(cygpath -w "$GITHUB_WORKSPACE/bin/install-theos")"
