@@ -17,13 +17,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run install-theos from a clean home
+      - name: Prepare clean home
         shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
           export PATH="/c/msys64/usr/bin:/c/msys64/mingw64/bin:$PATH"
           export HOME=/c/gha-home
           rm -rf "$HOME"
           mkdir -p "$HOME"
+          git config --global url."file:///$(cygpath -m "$GITHUB_WORKSPACE")".insteadOf "https://github.com/JiJingren/theos-win.git"
+          git config --global --get-regexp insteadOf
+
+      - name: Run install-theos from a clean home
+        shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail {0}
+        run: |
+          export PATH="/c/msys64/usr/bin:/c/msys64/mingw64/bin:$PATH"
+          export HOME=/c/gha-home
           unset THEOS
           echo "=== uname / arch ==="
           uname
@@ -41,6 +49,7 @@ jobs:
           source "$HOME/.bashrc" 2>/dev/null || source "$HOME/.bash_profile" 2>/dev/null || source "$HOME/.profile"
           echo "THEOS=$THEOS"
           test -x "$THEOS/bin/nic.pl"
+          test -f "$THEOS/Makefile" || test -d "$THEOS/makefiles"
           test -x "$THEOS/toolchain/windows/iphone/bin/clang.exe"
           test -x "$THEOS/toolchain/windows/iphone/bin/ld.exe"
           ls -la "$THEOS/sdks"
@@ -82,8 +91,8 @@ jobs:
         shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail {0}
         run: |
           export PATH="/c/msys64/usr/bin:/c/msys64/mingw64/bin:$PATH"
-          export HOME=/c/gha-nopacman
-          rm -rf "$HOME" && mkdir -p "$HOME" /tmp/nopacman/bin
+          export HOME=/c/gha-home
+          rm -rf /tmp/nopacman/bin && mkdir -p /tmp/nopacman/bin
           for t in bash sh uname ls mkdir cat git curl tar xz zip make perl rsync diff env printf cut grep sed; do
             p="$(command -v $t 2>/dev/null)" && ln -sf "$p" "/tmp/nopacman/bin/$t" || true
           done
