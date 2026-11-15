@@ -18,6 +18,31 @@ macOS, Linux, and Windows programs.
 <a href="https://theos.dev/discord">Discord</a>
 </p>
 
+## Windows (MSYS2)
+
+This fork adds native Windows support, built and tested on MSYS2.
+
+### Install
+
+Run from the **MSYS2 MINGW64** shell:
+
+    git clone https://github.com/JiJingren/theos.git ~/theos
+    ~/theos/bin/install-theos
+
+The installer will:
+
+- install build dependencies via `pacman` (`make`, `perl`, `rsync`, `curl`, `tar`, `xz`, `zip`, `diffutils`)
+- clone Theos to `~/theos` and add `THEOS` to your shell environment
+- download the Windows LLVM toolchain from [JiJingren/llvm-project](https://github.com/JiJingren/llvm-project/releases/latest)
+- install the latest iOS SDKs
+
+Then restart your shell and run `$THEOS/bin/nic.pl` to create a project.
+
+### Differences from upstream
+
+- Windows toolchain is distributed as `iOSToolchain-x86_64.tar.xz` and installed to `toolchain/windows/iphone`.
+- Swift toolchain support is not available on Windows.
+
 ## Contributors
 <table>
 <tr>
