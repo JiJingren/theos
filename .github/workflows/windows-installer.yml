@@ -92,17 +92,30 @@ jobs:
         run: |
           export PATH="/c/msys64/usr/bin:/c/msys64/mingw64/bin:$PATH"
           export HOME=/c/gha-home
-          bare="$(cygpath -w /tmp/nopacman/bin)"
-          rm -rf /tmp/nopacman/bin && mkdir -p /tmp/nopacman/bin
-          for t in mkdir rm ln cp mv uname cat git curl tar xz zip make perl rsync diff env cut grep sed; do
-            p="$(command -v "$t" 2>/dev/null)" && [ -n "$p" ] && cp -f "$p" "/tmp/nopacman/bin/$t"
+          rm -rf /tmp/nopacman && mkdir -p /tmp/nopacman
+          stub=/tmp/nopacman/stub
+          cat > "$stub" <<'STUB'
+          #!/usr/bin/bash
+          case "${0##*/}" in
+            pacman) echo "simulated: pacman absent here" >&2; exit 127 ;;
+            *) exec "/c/msys64/usr/bin/${0##*/}" "$@" ;;
+          esac
+          STUB
+          chmod +x "$stub"
+          mkdir -p /tmp/nopacman/bin
+          for t in uname cat; do
+            ln -sf "$stub" "/tmp/nopacman/bin/$t"
           done
-          ls /tmp/nopacman/bin
+          cd "$HOME"
           unset THEOS
           set +e
-          PATH="$bare" /c/msys64/usr/bin/bash.exe --noprofile --norc -c 'export PATH="/c/msys64/usr/bin:/tmp/nopacman/bin:$PATH"; unset THEOS; "$@"' _ "$(cygpath -w "$GITHUB_WORKSPACE/bin/install-theos")"
-          rc=$?
+          /c/msys64/usr/bin/bash.exe --noprofile --norc -c '
+            export PATH="/c/msys64/usr/bin:$(cygpath -u "\/tmp\/nopacman\/bin"):$PATH"
+            "$@"
+          ' _ "$(cygpath -w "$GITHUB_WORKSPACE/bin/install-theos")" 2>&1 | tee /tmp/nopacman.log
+          rc=${PIPESTATUS[0]}
           echo "exit code: $rc"
+          grep -q "pacman was not found" /tmp/nopacman.log
           test "$rc" -eq 3
 
       - uses: actions/upload-artifact@v4
