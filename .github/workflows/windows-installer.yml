@@ -100,7 +100,7 @@ jobs:
           ls /tmp/nopacman/bin
           unset THEOS
           set +e
-          PATH="$bare" /c/msys64/usr/bin/bash.exe --noprofile --norc "$(cygpath -w "$GITHUB_WORKSPACE/bin/install-theos")"
+          PATH="$bare" /c/msys64/usr/bin/bash.exe --noprofile --norc -c 'export PATH="/c/msys64/usr/bin:/tmp/nopacman/bin:$PATH"; unset THEOS; "$@"' _ "$(cygpath -w "$GITHUB_WORKSPACE/bin/install-theos")"
           rc=$?
           echo "exit code: $rc"
           test "$rc" -eq 3
