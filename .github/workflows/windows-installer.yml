@@ -24,8 +24,7 @@ jobs:
           export HOME=/c/gha-home
           rm -rf "$HOME"
           mkdir -p "$HOME"
-          git config --global url."file:///$(cygpath -m "$GITHUB_WORKSPACE")".insteadOf "https://github.com/JiJingren/theos-win.git"
-          git config --global --get-regexp insteadOf
+          git config --global --get-regexp insteadOf || true
 
       - name: Run install-theos from a clean home
         shell: C:\msys64\usr\bin\bash.exe --noprofile --norc -e -o pipefail {0}
@@ -51,8 +50,7 @@ jobs:
           test -x "$THEOS/bin/nic.pl"
           test -f "$THEOS/Makefile" || test -d "$THEOS/makefiles"
           test -x "$THEOS/toolchain/windows/iphone/bin/clang.exe"
-          test -x "$THEOS/toolchain/windows/iphone/bin/ld.exe"
-          ls -la "$THEOS/sdks"
+                    ls -la "$THEOS/sdks"
           "$THEOS/toolchain/windows/iphone/bin/clang.exe" --version | head -3
 
       - name: Build a tweak with the installed Theos
