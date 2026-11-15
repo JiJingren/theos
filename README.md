@@ -1,60 +1,74 @@
-# Theos for Windows
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://theos.dev/img/github-banner-dark.svg">
+<img src="https://theos.dev/img/github-banner.svg" alt="Theos">
+</picture>
+</p>
+<p align="center"><strong>
+A cross-platform build system for creating iOS,<br>
+macOS, Linux, and Windows programs.
+</strong></p>
+<p align="center">
+<a href="https://theos.dev/">Home</a> –
+<a href="https://theos.dev/docs/installation">Installation</a> –
+<a href="https://theos.dev/docs/">Documentation</a> –
+<a href="https://theos.dev/help">Get Help</a> –
+<a href="https://procursus.social/@theos">@theos@procursus.social</a> –
+<a href="https://twitter.com/theosdev">@theosdev</a> –
+<a href="https://theos.dev/discord">Discord</a>
+</p>
 
-A fork of [theos/theos](https://github.com/theos/theos) that natively builds iOS
-tweaks on Windows, without WSL, without Cygwin setup, and without a macOS host.
+## Contributors
+<table>
+<tr>
+<td align="center"><a href="https://github.com/kirb"><img src="https://github.com/kirb.png" width="100" alt=""><br>kirb</a></td>
+<td align="center"><a href="https://github.com/uroboro"><img src="https://github.com/uroboro.png" width="100" alt=""><br>uroboro</a></td>
+<td align="center"><a href="https://github.com/kabiroberai"><img src="https://github.com/kabiroberai.png" width="100" alt=""><br>kabiroberai</a></td>
+<td align="center"><a href="https://github.com/DHowett"><img src="https://github.com/DHowett.png" width="100" alt=""><br>DHowett</a></td>
+<td align="center"><a href="https://github.com/rpetrich"><img src="https://github.com/rpetrich.png" width="100" alt=""><br>rpetrich</a></td>
+</tr>
+</table>
 
-Everything upstream needs on Linux has a Windows equivalent here:
+Thanks to the following people for contributing to Theos in the past:
+[Aehmlo](https://github.com/Aehmlo),
+[akemin-dayo](https://github.com/akemin-dayo),
+[ARM64Darwin1820](https://github.com/ARM64Darwin1820),
+[ArtikusHG](https://github.com/ArtikusHG),
+[benrosen78](https://github.com/benrosen78),
+[brendonjkding](https://github.com/brendonjkding),
+[conradev](https://github.com/conradev),
+[coolstar](https://github.com/coolstar),
+[DavidSkrundz](https://github.com/DavidSkrundz),
+[DGh0st](https://github.com/DGh0st),
+[Diatrus](https://github.com/Diatrus),
+[dlevi309](https://github.com/dlevi309),
+[DuIslingr](https://github.com/DuIslingr),
+[elihwyma](https://github.com/elihwyma),
+[eswick](https://github.com/eswick),
+[evelyneee](https://github.com/evelyneee),
+[hirakujira](https://github.com/hirakujira),
+[inoahdev](https://github.com/inoahdev),
+[kemmis](https://github.com/kemmis),
+[lechium](https://github.com/lechium),
+[leptos-null](https://github.com/leptos-null),
+[liuxuan30](https://github.com/liuxuan30),
+[mstg](https://github.com/mstg),
+[Naville](https://github.com/Naville),
+[neoighodaro](https://github.com/neoighodaro),
+[nin9tyfour](https://github.com/nin9tyfour),
+[NSExceptional](https://github.com/NSExceptional),
+[opa334](https://github.com/opa334),
+[PoomSmart](https://github.com/PoomSmart),
+[quiprr](https://github.com/quiprr),
+[r-plus](https://github.com/r-plus),
+[Rand01ph](https://github.com/Rand01ph),
+[ryannair05](https://github.com/ryannair05),
+[sbingner](https://github.com/sbingner),
+[Shade-Zepheri](https://github.com/Shade-Zepheri),
+[supermamon](https://github.com/supermamon),
+[theiostream](https://github.com/theiostream),
+[Tyilo](https://github.com/Tyilo),
+[vsnrain](https://github.com/vsnrain)
 
-- the LLVM toolchain ships as native Windows executables (`clang.exe`, `ld.exe`,
-  `ldid.exe`, `plistutil.exe`, ...),
-- `make` and every helper (`sed`, `awk`, `rsync`, `perl`, `tar`, `xz`, `curl`)
-  come from [MSYS2](https://www.msys2.org/),
-- the installer is the same `bin/install-theos` as upstream, extended with a
-  `windows()` path that installs the dependencies with `pacman`, clones this
-  fork, and unpacks the Windows toolchain and SDKs,
-- vendored submodules are committed in-tree instead of being fetched by git.
-
-## Install
-
-Requirements: Windows 10 1803 or later and [MSYS2](https://www.msys2.org/).
-`git` is needed to clone the repo; every other build dependency is installed by
-the installer itself.
-
-Open an MSYS2 shell (UCRT64 or MSYS) and run:
-
-```sh
-git clone https://github.com/JiJingren/theos-win.git ~/theos
-~/theos/bin/install-theos
-```
-
-The installer runs `pacman -S --needed make perl rsync curl tar xz zip diffutils`,
-downloads the toolchain and the iPhone SDKs, and adds `export THEOS=~/theos` to
-your shell startup file. Restart the shell and run `$THEOS/bin/nic.pl` to create
-a project.
-
-## Build
-
-```
-cd /path/to/project
-make package
-```
-
-The resulting `.deb` is written to `packages/`. Run `make` from an MSYS2 shell so
-that `sed`, `awk`, `rsync`, `perl`, `tar`, and `xz` are available.
-
-## Differences from upstream
-
-- `makefiles/platform/Windows.mk` (aliased by `MINGW*`, `MSYS*`, and `Cygwin`)
-  is the only platform file.
-- `makefiles/targets/Windows/iphone.mk` points at the unprefixed Windows
-  toolchain and supplies the `-target` triple itself.
-- Helper scripts that upstream distributes as symlinks are plain files.
-- `bin/fakeroot.sh` is a no-op, `bin/install.exec` runs commands directly
-  instead of through `su`.
-- `bin/install-theos` grows a `windows()` function; the root check is skipped
-  and dependencies come from `pacman` instead of `sudo apt`.
-- 32-bit ARM targets are unsupported, because the Windows `ld64` crashes on
-  `armv6`/`armv7`/`armv7s` objects.
-
-Upstream documentation applies otherwise; see
-[theos.dev](https://theos.dev/docs/).
+## License
+See [LICENSE.md](LICENSE.md) for licensing information.
