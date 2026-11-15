@@ -92,13 +92,14 @@ jobs:
         run: |
           export PATH="/c/msys64/usr/bin:/c/msys64/mingw64/bin:$PATH"
           export HOME=/c/gha-home
+          bare="$(cygpath -w /tmp/nopacman/bin)"
           rm -rf /tmp/nopacman/bin && mkdir -p /tmp/nopacman/bin
-          for t in bash sh uname ls mkdir cat git curl tar xz zip make perl rsync diff env printf cut grep sed; do
-            p="$(command -v $t 2>/dev/null)" && ln -sf "$p" "/tmp/nopacman/bin/$t" || true
+          for t in bash sh uname cat git curl tar xz zip make perl rsync diff env printf cut grep sed; do
+            p="$(command -v "$t" 2>/dev/null)" && cp -f "$p" "/tmp/nopacman/bin/$t" || true
           done
           unset THEOS
           set +e
-          PATH="/tmp/nopacman/bin" /c/msys64/usr/bin/bash.exe --noprofile --norc "$GITHUB_WORKSPACE/bin/install-theos"
+          PATH="$bare" /c/msys64/usr/bin/bash.exe --noprofile --norc "$(cygpath -w "$GITHUB_WORKSPACE/bin/install-theos")"
           rc=$?
           echo "exit code: $rc"
           test "$rc" -eq 3
