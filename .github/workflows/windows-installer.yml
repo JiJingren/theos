@@ -94,8 +94,8 @@ jobs:
           export HOME=/c/gha-home
           bare="$(cygpath -w /tmp/nopacman/bin)"
           rm -rf /tmp/nopacman/bin && mkdir -p /tmp/nopacman/bin
-          for t in mkdir rm ln cp mv uname cat git curl tar xz zip make perl rsync diff env printf cut grep sed trash-put; do
-            p="$(command -v "$t" 2>/dev/null)" && cp -f "$p" "/tmp/nopacman/bin/$t"
+          for t in mkdir rm ln cp mv uname cat git curl tar xz zip make perl rsync diff env cut grep sed; do
+            p="$(command -v "$t" 2>/dev/null)" && [ -n "$p" ] && cp -f "$p" "/tmp/nopacman/bin/$t"
           done
           ls /tmp/nopacman/bin
           unset THEOS
