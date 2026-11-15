@@ -93,26 +93,29 @@ jobs:
           export PATH="/c/msys64/usr/bin:/c/msys64/mingw64/bin:$PATH"
           export HOME=/c/gha-home
           rm -rf /tmp/nopacman && mkdir -p /tmp/nopacman
-          stub=/tmp/nopacman/stub
-          cat > "$stub" <<'STUB'
+          cat > /tmp/nopacman/fakeshell <<'FAKE'
           #!/usr/bin/bash
-          case "${0##*/}" in
-            pacman) echo "simulated: pacman absent here" >&2; exit 127 ;;
-            *) exec "/c/msys64/usr/bin/${0##*/}" "$@" ;;
-          esac
-          STUB
-          chmod +x "$stub"
-          mkdir -p /tmp/nopacman/bin
-          for t in uname cat; do
-            ln -sf "$stub" "/tmp/nopacman/bin/$t"
-          done
-          cd "$HOME"
+          has_pacman=0
+          command() {
+            if [ "$1" = "-v" ]; then
+              if [ "$2" = "pacman" ]; then return 1; fi
+              builtin command -v "$2"
+              return $?
+            fi
+            builtin command "$@"
+          }
+          export -f command
+          FAKE
+          chmod +x /tmp/nopacman/fakeshell
+          cat > /tmp/nopacman/run.sh <<'RUN'
+          source /tmp/nopacman/fakeshell
           unset THEOS
+          "$@"
+          RUN
+          cd "$HOME"
           set +e
-          /c/msys64/usr/bin/bash.exe --noprofile --norc -c '
-            export PATH="/c/msys64/usr/bin:$(cygpath -u "\/tmp\/nopacman\/bin"):$PATH"
-            "$@"
-          ' _ "$(cygpath -w "$GITHUB_WORKSPACE/bin/install-theos")" 2>&1 | tee /tmp/nopacman.log
+          /c/msys64/usr/bin/bash.exe --noprofile --norc /tmp/nopacman/run.sh \
+            "$(cygpath -w "$GITHUB_WORKSPACE/bin/install-theos")" 2>&1 | tee /tmp/nopacman.log
           rc=${PIPESTATUS[0]}
           echo "exit code: $rc"
           grep -q "pacman was not found" /tmp/nopacman.log
